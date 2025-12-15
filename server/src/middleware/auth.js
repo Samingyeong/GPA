@@ -13,7 +13,16 @@ export function authenticate(req, res, next) {
     // Authorization 헤더에서 토큰 추출
     const authHeader = req.headers.authorization
 
+    // 디버깅: 헤더 확인
+    log.debug('인증 요청:', {
+      path: req.path,
+      hasAuthHeader: !!authHeader,
+      authHeader: authHeader ? `${authHeader.substring(0, 20)}...` : '없음',
+      allHeaders: Object.keys(req.headers)
+    })
+
     if (!authHeader) {
+      log.warn('인증 토큰 없음:', { path: req.path, headers: req.headers })
       return res.status(401).json({
         success: false,
         message: '인증 토큰이 필요합니다'

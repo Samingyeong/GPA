@@ -14,15 +14,23 @@ function ProtectedRoute({ children }) {
     if (token) {
       // 토큰 검증
       fetch('/api/auth/verify', {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       })
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) {
+            throw new Error('인증 실패')
+          }
+          return res.json()
+        })
         .then(result => {
           setIsAuthenticated(result.success)
         })
-        .catch(() => {
+        .catch((error) => {
+          console.error('토큰 검증 오류:', error)
           setIsAuthenticated(false)
           localStorage.removeItem('token')
           localStorage.removeItem('user')

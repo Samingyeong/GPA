@@ -37,8 +37,33 @@ function Login() {
       localStorage.setItem('token', result.data.token)
       localStorage.setItem('user', JSON.stringify(result.data.user))
 
-      // 대시보드로 이동
-      navigate('/dashboard')
+      // 토큰 검증 확인
+      try {
+        const verifyResponse = await fetch('/api/auth/verify', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${result.data.token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        const verifyResult = await verifyResponse.json()
+        
+        if (verifyResult.success) {
+          console.log('✅ 토큰 검증 성공:', verifyResult.data)
+          // 대시보드로 이동
+          navigate('/dashboard')
+        } else {
+          setError('토큰 검증에 실패했습니다. 다시 로그인해주세요.')
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+        }
+      } catch (verifyError) {
+        console.error('토큰 검증 오류:', verifyError)
+        setError('토큰 검증 중 오류가 발생했습니다.')
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+      }
     } catch (error) {
       console.error('로그인 오류:', error)
       setError('로그인 중 오류가 발생했습니다')

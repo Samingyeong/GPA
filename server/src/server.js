@@ -132,6 +132,21 @@ const swaggerOptions = {
         url: `http://localhost:${PORT}`,
         description: 'Development server'
       }
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'JWT 토큰을 사용한 인증. 로그인 API에서 받은 토큰을 "Bearer {token}" 형식으로 전달하세요.'
+        }
+      }
+    },
+    security: [
+      {
+        bearerAuth: []
+      }
     ]
   },
   apis: ['./src/routes/*.js', './src/swagger/*.yaml']

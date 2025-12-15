@@ -364,4 +364,58 @@ router.get('/verify', authenticate, async (req, res) => {
   }
 })
 
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: 로그아웃
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     description: |
+ *       사용자를 로그아웃합니다. 
+ *       JWT 토큰 기반 인증이므로 서버 측에서는 토큰 검증만 수행하고,
+ *       실제 토큰 삭제는 클라이언트에서 처리합니다.
+ *     responses:
+ *       200:
+ *         description: 로그아웃 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "로그아웃되었습니다"
+ *       401:
+ *         description: 인증 실패
+ */
+router.post('/logout', authenticate, async (req, res) => {
+  try {
+    log.info('로그아웃:', { studentId: req.studentId })
+
+    // JWT 토큰은 stateless이므로 서버 측에서 별도로 무효화할 필요 없음
+    // 클라이언트에서 토큰을 삭제하면 됨
+    // 향후 토큰 블랙리스트 기능이 필요하면 Redis 등을 사용하여 구현 가능
+
+    res.json({
+      success: true,
+      message: '로그아웃되었습니다'
+    })
+  } catch (error) {
+    log.error('로그아웃 오류:', {
+      error: error.message,
+      stack: error.stack
+    })
+    res.status(500).json({
+      success: false,
+      message: '로그아웃 중 오류가 발생했습니다',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    })
+  }
+})
+
 export default router

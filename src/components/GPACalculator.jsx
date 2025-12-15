@@ -1,10 +1,63 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './GPACalculator.css'
 import { calculateGPA, gradePoints, gradeLabels } from '../utils/gpaCalculator'
 import { checkGraduationRequirements } from '../utils/graduationChecker'
 import CourseInput from './CourseInput'
 
 function GPACalculator() {
+  const navigate = useNavigate()
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    // 로컬 스토리지에서 사용자 정보 로드
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData))
+      } catch (error) {
+        console.error('사용자 정보 파싱 오류:', error)
+      }
+    }
+  }, [])
+
+  const handleLogout = async () => {
+    // 로그아웃 확인
+    if (!window.confirm('로그아웃 하시겠습니까?')) {
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      
+      // 로그아웃 API 호출
+      if (token) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }).catch(error => {
+          // API 호출 실패해도 클라이언트에서 토큰 삭제는 진행
+          console.error('로그아웃 API 호출 오류:', error)
+        })
+      }
+
+      // 로컬 스토리지에서 토큰과 사용자 정보 제거
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      
+      // 로그인 페이지로 이동
+      navigate('/login')
+    } catch (error) {
+      console.error('로그아웃 오류:', error)
+      // 오류가 발생해도 로컬 스토리지는 정리
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      navigate('/login')
+    }
+  }
   const [courses, setCourses] = useState([
     { id: 1, name: '', credit: 3, grade: 'A+', category: '전선' }
   ])
@@ -60,7 +113,20 @@ function GPACalculator() {
   return (
     <div className="gpa-calculator">
       <div className="header">
-        <h1>🎓 한밭대학교 GPA 계산기</h1>
+        <div className="header-top">
+          <div className="header-title">
+            <h1>🎓 한밭대학교 GPA 계산기</h1>
+            {user && (
+              <div className="user-info">
+                <span className="user-name">{user.name}님</span>
+                <span className="user-id">({user.studentId})</span>
+              </div>
+            )}
+          </div>
+          <button className="btn-logout" onClick={handleLogout}>
+            로그아웃
+          </button>
+        </div>
         <p>과목 정보를 입력하고 학점을 계산해보세요</p>
         <div className="settings-bar">
           <div className="setting-item">
