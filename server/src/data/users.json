@@ -1,0 +1,30 @@
+[
+  {
+    "studentId": "20222562",
+    "passwordHash": "$2b$10$GcdizaIjDSkKGWD7OnW6Cevz3agHHl93GGhmkN3ExJZw/HIJGgBQy",
+    "name": "홍길동",
+    "admissionDate": "2022-03-01",
+    "currentYear": 3,
+    "status": "재학중",
+    "department": "컴퓨터공학과",
+    "majors": {
+      "primary": "컴퓨터공학과",
+      "double": [
+        "string"
+      ],
+      "minor": [
+        "string"
+      ],
+      "fusion": [
+        "string"
+      ],
+      "advanced": [
+        "string"
+      ]
+    },
+    "curriculumYear": "2019",
+    "studentType": "재학생",
+    "createdAt": "2025-12-15T12:32:21.472Z",
+    "updatedAt": "2025-12-15T12:32:21.472Z"
+  }
+]

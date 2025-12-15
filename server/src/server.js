@@ -5,6 +5,7 @@ import swaggerUi from 'swagger-ui-express'
 import swaggerJsdoc from 'swagger-jsdoc'
 import graduationRoutes from './routes/graduation.js'
 import courseRoutes from './routes/courses.js'
+import authRoutes from './routes/auth.js'
 import requestLogger from './middleware/requestLogger.js'
 import logger, { log } from './utils/logger.js'
 import { initializeFirebase } from './config/firebase.js'
@@ -140,6 +141,7 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
 // Routes
+app.use('/api/auth', authRoutes)
 app.use('/api/graduation', graduationRoutes)
 app.use('/api/courses', courseRoutes)
 

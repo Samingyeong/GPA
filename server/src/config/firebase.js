@@ -61,6 +61,7 @@ export function initializeFirebase() {
     }
 
     // 초기화 실패
+    log.warn('⚠️ Firebase 설정을 찾을 수 없습니다. 로컬 DB를 사용합니다.')
     throw new Error('Firebase 설정을 찾을 수 없습니다. serviceAccount.json 파일 또는 환경 변수를 설정하세요.')
   } catch (error) {
     log.error('❌ Firebase 초기화 실패:', {
