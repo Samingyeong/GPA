@@ -1,0 +1,203 @@
+openapi: 3.0.0
+info:
+  title: 한밭대학교 GPA 계산기 API
+  version: 1.0.0
+  description: |
+    졸업 요건 체크 및 GPA 계산을 위한 RESTful API
+    
+    ## 주요 기능
+    - 졸업 요건 자동 체크 (Rule Engine 기반)
+    - 부족 항목 리스트 제공
+    - 과목 검색 및 조회
+    
+    ## 흐름
+    1. 과목 DB (CSV Seed) → 과목 데이터 로드
+    2. 사용자 이수 과목 입력 → API 요청
+    3. Rule Engine → 졸업 요건 검증
+    4. 졸업 가능 여부 → 결과 반환
+    5. 부족 항목 리스트 → 상세 정보 제공
+
+tags:
+  - name: Graduation
+    description: 졸업 요건 관련 API
+  - name: Courses
+    description: 과목 관련 API
+  - name: GPA
+    description: GPA 계산 관련 API
+
+components:
+  schemas:
+    Course:
+      type: object
+      required:
+        - name
+        - credit
+        - grade
+        - category
+      properties:
+        name:
+          type: string
+          description: 과목명
+          example: "자료구조"
+        credit:
+          type: number
+          description: 학점
+          example: 3
+        grade:
+          type: string
+          enum: [A+, A, B+, B, C+, C, D+, D, F]
+          description: 성적
+          example: "A+"
+        category:
+          type: string
+          enum: [교필, 교선, 전필, 전선, 일선, 특필, 특선, 심필, 심선, 융필, 융선, 연선, 산선, 교직]
+          description: 이수구분
+          example: "전필"
+        department:
+          type: string
+          description: 개설학과
+          example: "컴퓨터공학과"
+        courseCode:
+          type: string
+          description: 과목코드
+          example: "CSE2101"
+    
+    GraduationCheckRequest:
+      type: object
+      required:
+        - courses
+      properties:
+        courses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Course'
+        curriculumYear:
+          type: string
+          enum: [2018, 2019]
+          default: "2019"
+          description: 교육과정 연도
+        studentType:
+          type: string
+          enum: [신입생, 편입생]
+          default: "신입생"
+          description: 입학 구분
+        extraCurricularUnits:
+          type: number
+          default: 0
+          description: 비교과과정 유닛 수
+    
+    RuleResult:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "TOTAL_130"
+        type:
+          type: string
+          enum: [TOTAL_CREDIT, MAJOR_BASIC_CREDIT, MAJOR_ADVANCED_CREDIT, LIBERAL_TOTAL_CREDIT, REQUIRED_COURSE, EXTRA_CURRICULAR]
+          example: "TOTAL_CREDIT"
+        passed:
+          type: boolean
+          example: true
+        required:
+          type: number
+          example: 130
+        current:
+          type: number
+          example: 125
+        remaining:
+          type: number
+          example: 5
+        message:
+          type: string
+          example: "총 학점 부족 (125/130, 부족: 5학점)"
+    
+    RuleGroupResult:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "MAJOR"
+        passed:
+          type: boolean
+          example: false
+        logic:
+          type: string
+          enum: [AND, OR]
+          example: "AND"
+        description:
+          type: string
+          example: "전공 이수 요건"
+        results:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/RuleResult'
+              - $ref: '#/components/schemas/RuleGroupResult'
+    
+    MissingItem:
+      type: object
+      properties:
+        type:
+          type: string
+          example: "TOTAL_CREDITS"
+        rule:
+          type: string
+          example: "총 학점"
+        message:
+          type: string
+          example: "총 학점 부족 (125/130, 부족: 5학점)"
+        required:
+          type: number
+          example: 130
+        current:
+          type: number
+          example: 125
+        remaining:
+          type: number
+          example: 5
+        missing:
+          type: array
+          items:
+            type: string
+    
+    GraduationCheckResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            passed:
+              type: boolean
+              description: 모든 요건 충족 여부
+              example: false
+            tree:
+              oneOf:
+                - $ref: '#/components/schemas/RuleResult'
+                - $ref: '#/components/schemas/RuleGroupResult'
+              description: 트리 구조의 평가 결과
+            missingItems:
+              type: array
+              items:
+                $ref: '#/components/schemas/MissingItem'
+              description: 부족 항목 리스트 (평탄화된 결과)
+            formatted:
+              type: string
+              description: 디버깅용 포맷된 결과 텍스트
+    
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "에러 메시지"
+        error:
+          type: string
+          description: 개발 환경에서만 표시
+

@@ -1,0 +1,27 @@
+{
+  "name": "hanbat-gpa-calculator",
+  "version": "1.0.0",
+  "description": "한밭대학교 학점 계산기",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:frontend": "vite",
+    "dev:backend": "cd server && npm run dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "parse-excel": "node scripts/parseExcel.js",
+    "generate-csv": "node scripts/generateMasterAndOfferings.js",
+    "test:api": "cd server && node test-api.js"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.0.8",
+    "xlsx": "^0.18.5"
+  }
+}

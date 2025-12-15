@@ -1,0 +1,100 @@
+.course-input-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.course-name-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.course-name {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.course-name:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #667eea;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  margin-top: -2px;
+}
+
+.suggestions-dropdown::-webkit-scrollbar {
+  width: 8px;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.suggestion-item {
+  padding: 12px 15px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #f0f0f0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover,
+.suggestion-item.selected {
+  background-color: #f0f4ff;
+}
+
+.suggestion-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.suggestion-name {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.suggestion-department {
+  font-size: 0.8rem;
+  color: #888;
+  font-weight: normal;
+}
+
+.suggestion-info {
+  font-size: 0.85rem;
+  color: #666;
+  align-self: flex-end;
+  white-space: nowrap;
+}
+
