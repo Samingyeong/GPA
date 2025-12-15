@@ -141,8 +141,10 @@ export class FirebaseOfferingModel {
       
       snapshot.docs.forEach(doc => {
         const data = doc.data()
-        if (data.department) {
-          departments.add(data.department)
+        const dept = data.department
+        // 빈 값 및 "--" 필터링
+        if (dept && typeof dept === 'string' && dept.trim() !== '' && dept.trim() !== '--') {
+          departments.add(dept.trim())
         }
       })
 
@@ -163,12 +165,14 @@ export class FirebaseOfferingModel {
       
       snapshot.docs.forEach(doc => {
         const data = doc.data()
-        if (data.year !== null && data.year !== undefined) {
-          years.add(data.year)
+        const year = data.year
+        // 유효한 학년만 필터링 (1, 2, 3, 4만)
+        if (year !== null && year !== undefined && !isNaN(year) && year >= 1 && year <= 4) {
+          years.add(String(year))
         }
       })
 
-      return Array.from(years).sort((a, b) => a - b)
+      return Array.from(years).sort((a, b) => parseInt(a) - parseInt(b))
     } catch (error) {
       log.error('학년 목록 조회 오류:', { error: error.message })
       return []

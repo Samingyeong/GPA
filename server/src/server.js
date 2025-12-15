@@ -54,16 +54,37 @@ try {
       log.info(`📊 CSV 파싱 완료: ${offeringsData.length}개 행`)
       
       if (offeringsData.length > 0) {
-        log.debug('첫 번째 행 샘플:', {
+        log.info('첫 번째 행 샘플:', {
           course_code: offeringsData[0].course_code,
           course_name: offeringsData[0].course_name,
           professor: offeringsData[0].professor,
-          department: offeringsData[0].department
+          department: offeringsData[0].department,
+          year: offeringsData[0].year
+        })
+        
+        // 통계 정보 출력
+        const uniqueDepartments = [...new Set(offeringsData.map(o => o.department).filter(d => d && d.trim() !== ''))].length
+        const uniqueYears = [...new Set(offeringsData.map(o => o.year).filter(y => y !== null && y !== undefined && y !== ''))].length
+        log.info('📈 개설 정보 통계:', {
+          총_개설정보: offeringsData.length,
+          고유_학과수: uniqueDepartments,
+          고유_학년수: uniqueYears,
+          샘플_학과: [...new Set(offeringsData.map(o => o.department).filter(d => d && d.trim() !== ''))].slice(0, 5)
         })
       }
       
       seedOfferingDatabase(offeringsData)
       log.info('🔍 개설 정보 DB 초기화 완료')
+      
+      // DB 로드 확인
+      const { getOfferingDB } = await import('./models/offeringSchema.js')
+      const db = getOfferingDB()
+      log.info('✅ DB 로드 확인:', {
+        로드된_개설정보수: db.offerings ? db.offerings.length : 0,
+        샘플_학과: db.offerings && db.offerings.length > 0 
+          ? [...new Set(db.offerings.slice(0, 10).map(o => o.department).filter(d => d && d.trim() !== ''))].slice(0, 3)
+          : []
+      })
     } catch (error) {
       log.error('개설 정보 CSV 로드 실패:', {
         error: error.message,

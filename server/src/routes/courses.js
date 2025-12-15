@@ -31,8 +31,10 @@ const router = express.Router()
  *         name: department
  *         schema:
  *           type: string
- *         description: 학과 필터
- *         example: "컴퓨터공학과"
+ *           enum: ["--", "건설환경공학과", "건축학과(5년제)", "기계소재융합시스템공학과", "도시공학과", "모바일융합공학과", "반도체시스템공학과", "산업경영공학과", "산업디자인학과", "소프트웨어융합교육원", "신소재공학과", "스마트시스템경영공학과", "융합기술학과", "인공지능소프트웨어학과", "전기공학과", "전자공학과", "정보통신공학과", "지능미디어공학과", "창의융합학과", "컴퓨터공학과", "통합물관리학과", "화학생명공학과"]
+ *           default: "--"
+ *         description: 학과 필터 (-- 선택 시 전체 학과 표시, /api/courses/departments에서 전체 목록 조회 가능)
+ *         example: "--"
  *       - in: query
  *         name: type
  *         schema:
@@ -261,11 +263,17 @@ router.get('/search', async (req, res) => {
     
     // Firebase인 경우 async search, 로컬인 경우 sync searchForAPI
     let results
+    let resultsWithoutFilters = []
+    
     if (useFirebase) {
       results = await db.searchForAPI(decodedQ, filters)
+      // 필터 없이 검색 결과 확인 (예외처리용)
+      if (results.length === 0 && Object.keys(filters).length > 0) {
+        resultsWithoutFilters = await db.searchForAPI(decodedQ, {})
+      }
     } else {
-      // 필터 없이 검색 결과 확인 (디버깅용)
-      const resultsWithoutFilters = db.searchForAPI(decodedQ, {})
+      // 필터 없이 검색 결과 확인 (예외처리용)
+      resultsWithoutFilters = db.searchForAPI(decodedQ, {})
       log.info('🔍 필터 없이 검색 결과:', { 
         count: resultsWithoutFilters.length,
         query: decodedQ,
@@ -280,29 +288,125 @@ router.get('/search', async (req, res) => {
       // 필터 적용 전후 비교
       log.info('🔍 필터 적용:', filters)
       results = db.searchForAPI(decodedQ, filters)
+    }
+    
+    // 검색 결과가 없을 때 예외처리
+    if (results.length === 0) {
+      const filterKeys = Object.keys(filters)
       
-      // 필터 적용 후 결과가 없으면, 필터별로 확인
-      if (results.length === 0 && Object.keys(filters).length > 0) {
-        log.warn('⚠️ 필터 적용 후 결과가 없습니다. 필터별 확인:')
+      // 검색어만으로 결과가 있는지 확인
+      const hasResultsWithoutFilters = resultsWithoutFilters.length > 0
+      
+      if (hasResultsWithoutFilters && filterKeys.length > 0) {
+        // 필터 조합이 일치하지 않는 경우
+        const problematicFilters = []
+        const suggestions = {}
         
-        // 각 필터를 하나씩 제거하면서 테스트
-        if (filters.year) {
+        // 각 필터를 하나씩 제거하면서 문제가 되는 필터 찾기
+        for (const filterKey of filterKeys) {
           const testFilters = { ...filters }
-          delete testFilters.year
-          const testResults = db.searchForAPI(decodedQ, testFilters)
-          log.info(`  - year 필터 제거 시: ${testResults.length}개 결과`)
+          delete testFilters[filterKey]
+          
+          let testResults
+          if (useFirebase) {
+            testResults = await db.searchForAPI(decodedQ, testFilters)
+          } else {
+            testResults = db.searchForAPI(decodedQ, testFilters)
+          }
+          
           if (testResults.length > 0) {
-            log.info(`  - year 필터 문제: 요청한 year=${filters.year}, 실제 데이터의 year:`, 
-              testResults.slice(0, 3).map(r => r.year))
+            problematicFilters.push(filterKey)
+            
+            // 제안할 수 있는 값들 추출
+            const uniqueValues = [...new Set(testResults.map(r => {
+              if (filterKey === 'department') return r.department
+              if (filterKey === 'professor') return r.professor
+              if (filterKey === 'year') return r.year
+              if (filterKey === 'category') return r.category
+              if (filterKey === 'stage') return r.stage
+              if (filterKey === 'lectureType') return r.lecture_type
+              return null
+            }).filter(v => v !== null && v !== undefined))].slice(0, 5)
+            
+            if (uniqueValues.length > 0) {
+              suggestions[filterKey] = uniqueValues
+            }
           }
         }
         
-        if (filters.department) {
-          const testFilters = { ...filters }
-          delete testFilters.department
-          const testResults = db.searchForAPI(decodedQ, testFilters)
-          log.info(`  - department 필터 제거 시: ${testResults.length}개 결과`)
+        // 필터별 한국어 이름 매핑
+        const filterNames = {
+          department: '학과',
+          professor: '교수명',
+          year: '학년',
+          category: '세부 카테고리',
+          stage: '전공 단계',
+          type: '이수구분',
+          classroom: '강의실',
+          lectureType: '강의구분'
         }
+        
+        let message = '검색 결과가 없습니다. '
+        if (problematicFilters.length > 0) {
+          const filterNameList = problematicFilters.map(f => filterNames[f] || f).join(', ')
+          message += `입력하신 ${filterNameList} 필터와 일치하는 과목이 없습니다.`
+          
+          if (Object.keys(suggestions).length > 0) {
+            message += ' 다음 값들을 확인해보세요: '
+            const suggestionList = Object.entries(suggestions).map(([key, values]) => {
+              return `${filterNames[key]}: ${values.join(', ')}`
+            }).join(' | ')
+            message += suggestionList
+          }
+        } else {
+          message += '필터 조합을 확인해주세요.'
+        }
+        
+        log.warn('⚠️ 검색 결과 없음:', {
+          query: decodedQ,
+          filters: filters,
+          problematicFilters: problematicFilters,
+          suggestions: suggestions,
+          resultsWithoutFilters: resultsWithoutFilters.length
+        })
+        
+        return res.status(404).json({
+          success: false,
+          message: message,
+          data: [],
+          count: 0,
+          query: decodedQ || '',
+          problematicFilters: problematicFilters.map(f => filterNames[f] || f),
+          suggestions: suggestions
+        })
+      } else if (!hasResultsWithoutFilters && decodedQ) {
+        // 검색어 자체가 일치하지 않는 경우
+        log.warn('⚠️ 검색어 일치 없음:', { query: decodedQ })
+        return res.status(404).json({
+          success: false,
+          message: `"${decodedQ}"에 해당하는 과목을 찾을 수 없습니다. 검색어를 확인해주세요.`,
+          data: [],
+          count: 0,
+          query: decodedQ
+        })
+      } else if (filterKeys.length === 0 && !decodedQ) {
+        // 검색어도 필터도 없는 경우
+        return res.status(400).json({
+          success: false,
+          message: '검색어 또는 필터를 입력해주세요.',
+          data: [],
+          count: 0
+        })
+      } else {
+        // 기타 경우
+        log.warn('⚠️ 검색 결과 없음:', { query: decodedQ, filters: filters })
+        return res.status(404).json({
+          success: false,
+          message: '검색 결과가 없습니다. 검색어나 필터를 변경해보세요.',
+          data: [],
+          count: 0,
+          query: decodedQ || ''
+        })
       }
     }
     
@@ -342,19 +446,58 @@ router.get('/search', async (req, res) => {
  *   get:
  *     summary: 학과 목록 조회
  *     tags: [Courses]
- *     description: 검색 필터용 학과 목록
+ *     description: 검색 필터용 학과 목록 (드롭다운용)
  *     responses:
  *       200:
  *         description: 학과 목록
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["건설환경공학과", "건축학과(5년제)", "기계소재융합시스템공학과", "도시공학과", "모바일융합공학과", "반도체시스템공학과", "산업경영공학과", "산업디자인학과", "소프트웨어융합교육원", "신소재공학과", "스마트시스템경영공학과", "융합기술학과", "인공지능소프트웨어학과", "전기공학과", "전자공학과", "정보통신공학과", "지능미디어공학과", "창의융합학과", "컴퓨터공학과", "통합물관리학과", "화학생명공학과"]
  */
-router.get('/departments', (req, res) => {
+router.get('/departments', async (req, res) => {
   try {
-    const db = getOfferingDB()
-    const departments = [...new Set(
-      db.offerings
-        .map(o => o.department)
-        .filter(d => d)
-    )].sort()
+    let departments = []
+    
+    // Firebase 또는 로컬 DB 사용
+    let useFirebase = false
+    try {
+      const firebaseModel = getFirebaseOfferingModel()
+      const totalCount = await firebaseModel.getCount()
+      if (totalCount > 0) {
+        useFirebase = true
+        departments = await firebaseModel.getDepartments()
+        log.debug('Firebase에서 학과 목록 조회:', { count: departments.length })
+      } else {
+        const db = getOfferingDB()
+        // 중복 제거 및 빈 값 필터링 강화
+        departments = [...new Set(
+          db.offerings
+            .map(o => o.department)
+            .filter(d => d && typeof d === 'string' && d.trim() !== '' && d.trim() !== '--')
+            .map(d => d.trim())
+        )].sort()
+        log.debug('로컬 DB에서 학과 목록 조회:', { count: departments.length })
+      }
+    } catch (error) {
+      log.warn('Firebase 초기화 실패, 로컬 DB 사용:', { error: error.message })
+      const db = getOfferingDB()
+      // 중복 제거 및 빈 값 필터링 강화
+      departments = [...new Set(
+        db.offerings
+          .map(o => o.department)
+          .filter(d => d && typeof d === 'string' && d.trim() !== '' && d.trim() !== '--')
+          .map(d => d.trim())
+      )].sort()
+    }
     
     res.json({
       success: true,
@@ -368,6 +511,81 @@ router.get('/departments', (req, res) => {
     res.status(500).json({
       success: false,
       message: '학과 목록 조회 중 오류가 발생했습니다'
+    })
+  }
+})
+
+/**
+ * @swagger
+ * /api/courses/years:
+ *   get:
+ *     summary: 학년 목록 조회
+ *     tags: [Courses]
+ *     description: 검색 필터용 학년 목록 (드롭다운용)
+ *     responses:
+ *       200:
+ *         description: 학년 목록
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["1", "2", "3", "4"]
+ */
+router.get('/years', async (req, res) => {
+  try {
+    let years = []
+    
+    // Firebase 또는 로컬 DB 사용
+    let useFirebase = false
+    try {
+      const firebaseModel = getFirebaseOfferingModel()
+      const totalCount = await firebaseModel.getCount()
+      if (totalCount > 0) {
+        useFirebase = true
+        years = await firebaseModel.getYears()
+        log.debug('Firebase에서 학년 목록 조회:', { count: years.length })
+      } else {
+        const db = getOfferingDB()
+        // 중복 제거 및 유효한 학년만 필터링 (1, 2, 3, 4만)
+        years = [...new Set(
+          db.offerings
+            .map(o => o.year)
+            .filter(y => y !== null && y !== undefined && !isNaN(y) && y >= 1 && y <= 4)
+            .map(y => String(y))
+        )].sort((a, b) => parseInt(a) - parseInt(b))
+        log.debug('로컬 DB에서 학년 목록 조회:', { count: years.length, years })
+      }
+    } catch (error) {
+      log.warn('Firebase 초기화 실패, 로컬 DB 사용:', { error: error.message })
+      const db = getOfferingDB()
+      // 중복 제거 및 유효한 학년만 필터링 (1, 2, 3, 4만)
+      years = [...new Set(
+        db.offerings
+          .map(o => o.year)
+          .filter(y => y !== null && y !== undefined && !isNaN(y) && y >= 1 && y <= 4)
+          .map(y => String(y))
+      )].sort((a, b) => parseInt(a) - parseInt(b))
+    }
+    
+    res.json({
+      success: true,
+      data: years
+    })
+  } catch (error) {
+    log.error('학년 목록 조회 오류:', {
+      error: error.message,
+      stack: error.stack
+    })
+    res.status(500).json({
+      success: false,
+      message: '학년 목록 조회 중 오류가 발생했습니다'
     })
   }
 })
