@@ -133,32 +133,10 @@ files.forEach(file => {
             remarks: remarks ? remarks.toString().trim() : ''
           }
           
-          // 중복 제거 (같은 이름과 학점이면 하나만 유지, 가장 일반적인 학점 선택)
-          const existing = allCourses.find(c => c.name === course.name && c.credit === course.credit)
-          if (!existing) {
-            allCourses.push(course)
-            fileCourseCount++
-          } else {
-            // 기존 항목에 학기 정보 추가 (여러 학기에 개설되는 경우)
-            if (!existing.semester) {
-              existing.semester = semester
-            } else if (!existing.semester.includes(semester)) {
-              existing.semester = `${existing.semester}, ${semester}`
-            }
-            // 기존 항목에 학점이 없고 새 항목에 있으면 업데이트
-            if (course.credit && !existing.credit) {
-              existing.credit = course.credit
-            }
-            if (course.category !== '기타' && existing.category === '기타') {
-              existing.category = course.category
-            }
-            if (course.department && !existing.department) {
-              existing.department = course.department
-            }
-            if (course.courseCode && !existing.courseCode) {
-              existing.courseCode = course.courseCode
-            }
-          }
+          // 중복 제거하지 않고 모든 행을 그대로 저장 (강좌번호와 분반이 다를 수 있으므로)
+          // 같은 과목코드여도 강좌번호나 분반이 다르면 다른 개설로 저장
+          allCourses.push(course)
+          fileCourseCount++
         }
       })
     })

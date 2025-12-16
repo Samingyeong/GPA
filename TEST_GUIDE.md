@@ -166,3 +166,4 @@ curl -X POST http://localhost:3001/api/graduation/check \
 3. 결과 표시 UI 개선
 
 
+

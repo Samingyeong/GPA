@@ -199,10 +199,13 @@ export class TimetableModel {
         return await this.save(newTimetable.toJSON())
       }
 
-      // 중복 체크 (course_code 기준)
-      const existingCourse = timetable.courses.find(
-        c => c.course_code === course.course_code
-      )
+      // 중복 체크 (course_code + course_number + section 조합 기준)
+      const existingCourse = timetable.courses.find(c => {
+        const sameCode = c.course_code === course.course_code
+        const sameNumber = (c.course_number || null) === (course.course_number || null)
+        const sameSection = (c.section || null) === (course.section || null)
+        return sameCode && sameNumber && sameSection
+      })
 
       if (existingCourse) {
         throw new Error('이미 추가된 과목입니다')
@@ -220,7 +223,7 @@ export class TimetableModel {
   /**
    * 시간표에서 과목 삭제
    */
-  async removeCourse(studentId, year, semester, courseCode) {
+  async removeCourse(studentId, year, semester, courseCode, courseNumber = null, section = null) {
     try {
       const timetable = await this.findByStudentAndSemester(studentId, year, semester)
       
@@ -228,14 +231,17 @@ export class TimetableModel {
         throw new Error('시간표를 찾을 수 없습니다')
       }
 
-      // 과목 제거
-      timetable.courses = timetable.courses.filter(
-        c => c.course_code !== courseCode
-      )
+      // 과목 제거 (course_code + course_number + section 조합 기준)
+      timetable.courses = timetable.courses.filter(c => {
+        const sameCode = c.course_code === courseCode
+        const sameNumber = (c.course_number || null) === (courseNumber || null)
+        const sameSection = (c.section || null) === (section || null)
+        return !(sameCode && sameNumber && sameSection)
+      })
 
       return await this.save(timetable.toJSON())
     } catch (error) {
-      log.error('과목 삭제 오류:', { studentId, year, semester, courseCode, error: error.message })
+      log.error('과목 삭제 오류:', { studentId, year, semester, courseCode, courseNumber, section, error: error.message })
       throw error
     }
   }
@@ -243,7 +249,7 @@ export class TimetableModel {
   /**
    * 시간표에서 과목 업데이트 (성적 등)
    */
-  async updateCourse(studentId, year, semester, courseCode, updateData) {
+  async updateCourse(studentId, year, semester, courseCode, updateData, courseNumber = null, section = null) {
     try {
       const timetable = await this.findByStudentAndSemester(studentId, year, semester)
       
@@ -251,10 +257,13 @@ export class TimetableModel {
         throw new Error('시간표를 찾을 수 없습니다')
       }
 
-      // 과목 찾기 및 업데이트
-      const courseIndex = timetable.courses.findIndex(
-        c => c.course_code === courseCode
-      )
+      // 과목 찾기 및 업데이트 (course_code + course_number + section 조합 기준)
+      const courseIndex = timetable.courses.findIndex(c => {
+        const sameCode = c.course_code === courseCode
+        const sameNumber = (c.course_number || null) === (courseNumber || null)
+        const sameSection = (c.section || null) === (section || null)
+        return sameCode && sameNumber && sameSection
+      })
 
       if (courseIndex === -1) {
         throw new Error('과목을 찾을 수 없습니다')
@@ -267,7 +276,7 @@ export class TimetableModel {
 
       return await this.save(timetable.toJSON())
     } catch (error) {
-      log.error('과목 업데이트 오류:', { studentId, year, semester, courseCode, error: error.message })
+      log.error('과목 업데이트 오류:', { studentId, year, semester, courseCode, courseNumber, section, error: error.message })
       throw error
     }
   }
@@ -284,4 +293,5 @@ export function getTimetableModel() {
   }
   return timetableModelInstance
 }
+
 

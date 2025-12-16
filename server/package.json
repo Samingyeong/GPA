@@ -9,6 +9,7 @@
     "start": "node src/server.js",
     "seed": "node src/database/seed.js",
     "migrate:firebase": "node scripts/migrateToFirebase.js",
+    "check:firebase": "node scripts/checkFirebaseData.js",
     "test": "node test-api.js"
   },
   "dependencies": {

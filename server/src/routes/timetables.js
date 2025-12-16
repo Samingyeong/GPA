@@ -188,7 +188,9 @@ router.post('/', authenticate, [
                 grade: course.grade || null,
                 category: course.category || masterData.category || '',
                 type: course.type || masterData.type || '',
-                stage: course.stage || masterData.stage || 'BASIC'
+                stage: course.stage || masterData.stage || 'BASIC',
+                course_number: course.course_number || null,
+                section: course.section || null
               }
             }
           } catch (error) {
@@ -204,7 +206,9 @@ router.post('/', authenticate, [
           grade: course.grade || null,
           category: course.category || '',
           type: course.type || '',
-          stage: course.stage || 'BASIC'
+          stage: course.stage || 'BASIC',
+          course_number: course.course_number || null,
+          section: course.section || null
         }
       })
     )
@@ -297,7 +301,7 @@ router.post('/courses', authenticate, [
       })
     }
 
-    const { year, semester, course_code, grade } = req.body
+    const { year, semester, course_code, course_number, section, grade } = req.body
     const studentId = req.studentId
     const timetableModel = getTimetableModel()
 
@@ -322,7 +326,9 @@ router.post('/courses', authenticate, [
       grade: grade || null,
       category: masterData.category || '',
       type: masterData.type || '',
-      stage: masterData.stage || 'BASIC'
+      stage: masterData.stage || 'BASIC',
+      course_number: course_number || null,
+      section: section || null
     }
 
     const timetable = await timetableModel.addCourse(
@@ -332,7 +338,7 @@ router.post('/courses', authenticate, [
       course
     )
 
-    log.info('과목 추가 완료:', { studentId, year, semester, course_code })
+    log.info('과목 추가 완료:', { studentId, year, semester, course_code, course_number, section })
 
     res.json({
       success: true,
@@ -417,7 +423,7 @@ router.delete('/courses', authenticate, [
       })
     }
 
-    const { year, semester, course_code } = req.body
+    const { year, semester, course_code, course_number, section } = req.body
     const studentId = req.studentId
     const timetableModel = getTimetableModel()
 
@@ -425,7 +431,9 @@ router.delete('/courses', authenticate, [
       studentId,
       parseInt(year),
       parseInt(semester),
-      course_code
+      course_code,
+      course_number || null,
+      section || null
     )
 
     log.info('과목 삭제 완료:', { studentId, year, semester, course_code })
@@ -516,7 +524,7 @@ router.put('/courses', authenticate, [
       })
     }
 
-    const { year, semester, course_code, ...updateData } = req.body
+    const { year, semester, course_code, course_number, section, ...updateData } = req.body
     const studentId = req.studentId
     const timetableModel = getTimetableModel()
 
@@ -525,7 +533,9 @@ router.put('/courses', authenticate, [
       parseInt(year),
       parseInt(semester),
       course_code,
-      updateData
+      updateData,
+      course_number || null,
+      section || null
     )
 
     log.info('과목 수정 완료:', { studentId, year, semester, course_code })
@@ -557,4 +567,5 @@ router.put('/courses', authenticate, [
 })
 
 export default router
+
 

@@ -71,16 +71,23 @@ async function addCourseToTimetable(year, semester, courseCode) {
 }
 
 // 과목 삭제 API
-async function removeCourseFromTimetable(year, semester, courseCode) {
+async function removeCourseFromTimetable(year, semester, course) {
   const token = localStorage.getItem('token')
   try {
+    const body = {
+      year,
+      semester,
+      course_code: course.course_code,
+      course_number: course.course_number || null,
+      section: course.section || null
+    }
     const response = await fetch('/api/timetables/courses', {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ year, semester, course_code: courseCode })
+      body: JSON.stringify(body)
     })
     const result = await response.json()
     return result.success
@@ -91,16 +98,24 @@ async function removeCourseFromTimetable(year, semester, courseCode) {
 }
 
 // 성적 수정 API
-async function updateCourseGrade(year, semester, courseCode, grade) {
+async function updateCourseGrade(year, semester, course, grade) {
   const token = localStorage.getItem('token')
   try {
+    const body = {
+      year,
+      semester,
+      course_code: course.course_code,
+      course_number: course.course_number || null,
+      section: course.section || null,
+      grade
+    }
     const response = await fetch('/api/timetables/courses', {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ year, semester, course_code: courseCode, grade })
+      body: JSON.stringify(body)
     })
     const result = await response.json()
     return result.success ? result.data : null
@@ -187,7 +202,7 @@ function Timetable() {
 
   const handleAddCourse = async (course) => {
     try {
-      await addCourseToTimetable(currentYear, currentSemester, course.course_code)
+      await addCourseToTimetable(currentYear, currentSemester, course)
       setSearchQuery('')
       setSearchResults([])
       setShowSearchResults(false)
@@ -202,13 +217,13 @@ function Timetable() {
     }
   }
 
-  const handleRemoveCourse = async (courseCode) => {
+  const handleRemoveCourse = async (course) => {
     if (!window.confirm('과목을 삭제하시겠습니까?')) {
       return
     }
 
     try {
-      await removeCourseFromTimetable(currentYear, currentSemester, courseCode)
+      await removeCourseFromTimetable(currentYear, currentSemester, course)
       await loadTimetable()
       alert('과목이 삭제되었습니다')
     } catch (error) {
@@ -339,7 +354,7 @@ function Timetable() {
               <div className="search-results">
                 {searchResults.map((course, index) => (
                   <div
-                    key={`${course.course_code}-${index}`}
+                    key={`${course.course_code}-${course.course_number || ''}-${course.section || ''}-${index}`}
                     className="search-result-item"
                     onClick={() => handleAddCourse(course)}
                   >
@@ -351,6 +366,8 @@ function Timetable() {
                       {course.credit}학점 · {course.category || '기타'}
                       {course.department && ` · ${course.department}`}
                       {course.professor && ` · ${course.professor}`}
+                      {course.course_number && ` · 강좌번호: ${course.course_number}`}
+                      {course.section && ` · 분반: ${course.section}`}
                     </div>
                   </div>
                 ))}
@@ -367,7 +384,7 @@ function Timetable() {
           ) : timetable.courses && timetable.courses.length > 0 ? (
             <div className="course-list">
               {timetable.courses.map((course, index) => (
-                <div key={`${course.course_code}-${index}`} className="course-item">
+                <div key={`${course.course_code}-${course.course_number || ''}-${course.section || ''}-${index}`} className="course-item">
                   <div className="course-info">
                     <div className="course-main">
                       <span className="course-name">{course.course_name || course.name}</span>
@@ -375,6 +392,8 @@ function Timetable() {
                     </div>
                     <div className="course-details">
                       {course.credit}학점 · {course.category || '기타'}
+                      {course.course_number && ` · 강좌번호: ${course.course_number}`}
+                      {course.section && ` · 분반: ${course.section}`}
                       {course.grade && (
                         <span className="course-grade"> · 성적: {course.grade}</span>
                       )}
@@ -389,7 +408,7 @@ function Timetable() {
                     </button>
                     <button
                       className="btn-remove"
-                      onClick={() => handleRemoveCourse(course.course_code)}
+                      onClick={() => handleRemoveCourse(course)}
                     >
                       삭제
                     </button>
@@ -449,4 +468,5 @@ function Timetable() {
 }
 
 export default Timetable
+
 
