@@ -284,3 +284,4 @@ export function getTimetableModel() {
   }
   return timetableModelInstance
 }
+

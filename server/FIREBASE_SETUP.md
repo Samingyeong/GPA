@@ -109,3 +109,4 @@ npm run dev
 - Firebase Console에서 컬렉션이 생성되었는지 확인
 - 서버 로그에서 Firebase 초기화 메시지 확인
 
+

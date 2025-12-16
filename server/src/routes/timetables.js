@@ -557,3 +557,4 @@ router.put('/courses', authenticate, [
 })
 
 export default router
+

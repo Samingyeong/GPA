@@ -113,7 +113,7 @@ function GPACalculator() {
   return (
     <div className="gpa-calculator">
       <div className="header">
-        <div className="header-top">
+          <div className="header-top">
           <div className="header-title">
             <h1>🎓 한밭대학교 GPA 계산기</h1>
             {user && (
@@ -123,9 +123,14 @@ function GPACalculator() {
               </div>
             )}
           </div>
-          <button className="btn-logout" onClick={handleLogout}>
-            로그아웃
-          </button>
+          <div className="header-actions">
+            <button className="btn-secondary" onClick={() => navigate('/timetable')}>
+              시간표 관리
+            </button>
+            <button className="btn-logout" onClick={handleLogout}>
+              로그아웃
+            </button>
+          </div>
         </div>
         <p>과목 정보를 입력하고 학점을 계산해보세요</p>
         <div className="settings-bar">

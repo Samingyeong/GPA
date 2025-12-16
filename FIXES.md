@@ -35,3 +35,4 @@ PORT=3002
 2. Swagger 문서 확인: http://localhost:3001/api-docs
 3. 프론트엔드 실행: `npm run dev` (새 터미널)
 
+

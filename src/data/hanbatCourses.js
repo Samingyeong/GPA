@@ -22685,3 +22685,4 @@ export function getCourseByName(courseName) {
     course.name === courseName
   ) || null
 }
+

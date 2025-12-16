@@ -4,6 +4,7 @@ import './App.css'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import GPACalculator from './components/GPACalculator'
+import Timetable from './pages/Timetable'
 
 // 인증 보호 컴포넌트
 function ProtectedRoute({ children }) {
@@ -59,6 +60,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <GPACalculator />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/timetable" 
+            element={
+              <ProtectedRoute>
+                <Timetable />
               </ProtectedRoute>
             } 
           />

@@ -184,3 +184,4 @@ export function getCreditsByCategory(courses) {
   return stats
 }
 
+
